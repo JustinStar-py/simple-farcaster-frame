@@ -12,6 +12,7 @@
     "dev": "pnpm run '/^dev:.*/'",
     "dev:server": "tsx watch src/index.ts",
     "dev:tunnel": "lt --port 3000",
+    "dev:ngrok": "ngrok http --domain=jolly-diverse-herring.ngrok-free.app 3000",
     "lint": "eslint . --ext .ts,.tsx"
   },
   "dependencies": {
