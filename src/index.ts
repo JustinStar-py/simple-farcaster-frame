@@ -4,9 +4,11 @@ import { html } from 'hono/html'
 import type { FrameSignaturePacket } from './types';
 
 // other dependencies
-import qs from 'qs';
+import * as qs from 'qs';
 import axios from 'axios';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
 
 dotenv.config();
 const app = new Hono()
@@ -72,12 +74,11 @@ app.post('/gm-gn', async (c) => {
 })
 
 // ========================================= //
-// ========================================= //
-// ========================================= //
 
 app.get('/degen-chart', (c) => {
-  const frameImage = 'https://remote-image.decentralized-content.com/image?url=https%3A%2F%2Fipfs.decentralized-content.com%2Fipfs%2Fbafybeiab4axk3jfcdrlrjf5hks42c4hhm6lnah5t6bksecfzbtmczc4h2i&w=1920&q=75'
+  const frameImage = 'https://jolly-diverse-herring.ngrok-free.app/gifs/degen-chart.gif'
   const framePostUrl = c.req.url
+  const frameSharingText = "https://warpcast.com/~/compose?text=Check $DEGEN chart easily here! ✨" + encodeURIComponent("\n") + "frame by @justin-eth 🤝🏻&embeds[]=https://jolly-diverse-herring.ngrok-free.app/degen-chart"
 
   return c.html(html`
     <html lang="en">
@@ -86,9 +87,12 @@ app.get('/degen-chart', (c) => {
         <meta property="fc:frame" content="vNext" />
   
         <meta property="fc:frame:image" content="${frameImage}" />
-        <meta property="fc:frame:image:aspect_ratio" content="1:1" />
+        <meta property="fc:frame:image:aspect_ratio" content="1.91:1" />
         <meta property="fc:frame:post_url" content="${framePostUrl}" />
         <meta name="fc:frame:button:1" content="$DEGEN Chart" />
+        <meta name="fc:frame:button:2" content="Share" />
+        <meta name="fc:frame:button:2:action" content="link" />
+        <meta name="fc:frame:button:2:target" content="${frameSharingText}" />
         <title>Farcaster Frames</title>
       </head>
       <body>
@@ -101,11 +105,41 @@ app.get('/degen-chart', (c) => {
 
 app.post('/degen-chart', async (c) => {
   try {
+    const intervalTimesButtons = ["15m", "1h", "4h", "1d"]
+    const choosingTimeframe = "https://jolly-diverse-herring.ngrok-free.app/gifs/chart-timeframe.gif"
+
+    // convert text to url string
+    const framePostUrl = c.req.url
+    return c.html(html`
+      <html lang="en">
+        <head>
+          <meta property="fc:frame" content="vNext" />
+          <meta property="fc:frame:image" content="${choosingTimeframe}" />
+          <meta property="fc:frame:image:aspect_ratio" content="1.91:1" />
+          <meta property="fc:frame:post_url" content="${framePostUrl.replace("degen-chart", "degen-chart-show")}" />
+          <meta name="fc:frame:button:1" content="${intervalTimesButtons[0]}" />
+          <meta name="fc:frame:button:2" content="${intervalTimesButtons[1]}" />
+          <meta name="fc:frame:button:3" content="${intervalTimesButtons[2]}" />
+          <meta name="fc:frame:button:4" content="${intervalTimesButtons[2]}" />
+          <title>Farcaster Frames</title>
+        </head>
+      </html>
+    `)
+  } catch (error) {
+    console.error(error)
+    return c.json({ error: 'Invalid request' }, 400)
+  }
+})
+
+app.post('/degen-chart-show', async (c) => {
+  try {
     const body = await c.req.json<FrameSignaturePacket>()
     const { buttonIndex } = body.untrustedData
-    const intervalTimesButtons = ["1h", "4h", "1d"]
+    const intervalTimesButtons = ["15m", "1h", "4h", "1d"]
+    const fixingBugFrameImage = "https://jolly-diverse-herring.ngrok-free.app/gifs/fixing-bugs.gif"
 
     const framePostUrl = c.req.url
+
     const fetchImage = async () => {
       const img = await axios.get('https://api.chart-img.com/v1/tradingview/advanced-chart/storage', {
           headers: {
@@ -114,7 +148,7 @@ app.post('/degen-chart', async (c) => {
           params: {
             symbol: 'BYBIT:DEGENUSDT',
             interval: intervalTimesButtons[buttonIndex - 1],
-            studies: ['MACD'],
+            studies: [],
           },
           paramsSerializer: (params) => {
             return qs.stringify(params, { arrayFormat: 'repeat' })
@@ -136,12 +170,10 @@ app.post('/degen-chart', async (c) => {
           <meta property="fc:frame:image" content="${await fetchImage()}" />
           <meta property="fc:frame:image:aspect_ratio" content="1.91:1" />
           <meta property="fc:frame:post_url" content="${framePostUrl}" />
-          <meta name="fc:frame:button:1" content="1h" />
-          <meta name="fc:frame:button:2" content="4h" />
-          <meta name="fc:frame:button:3" content="1d" />
-          <meta name="fc:frame:button:4" content="Chart 📈" />
-          <meta name="fc:frame:button:4:action" content="link" />
-          <meta name="fc:frame:button:4:target" content="https://www.tradingview.com/chart/?symbol=BYBIT%3ADEGENUSDT" />
+          <meta name="fc:frame:button:1" content="${intervalTimesButtons[0]}" />
+          <meta name="fc:frame:button:2" content="${intervalTimesButtons[1]}" />
+          <meta name="fc:frame:button:3" content="${intervalTimesButtons[2]}" />
+          <meta name="fc:frame:button:4" content="${intervalTimesButtons[3]}" />
           <title>Farcaster Frames</title>
         </head>
       </html>
@@ -151,6 +183,24 @@ app.post('/degen-chart', async (c) => {
     return c.json({ error: 'Invalid request' }, 400)
   }
 })
+
+// ========================================= //
+
+app.get('/gifs/:filename', async (c) => {
+  const filename = c.req.param('filename');
+  const gifPath = path.join(__dirname, 'gifs', filename);
+
+  try {
+    const fileData = await fs.promises.readFile(gifPath);
+    const extension = path.extname(filename).slice(1);
+
+    c.header('Content-Type', `image/${extension}`);
+    return c.body(fileData);
+  } catch (err) {
+    console.error(err);
+    return c.text('File not found', 404);
+  }
+});
 
 
 const port = 3000
