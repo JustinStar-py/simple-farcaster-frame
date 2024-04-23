@@ -120,7 +120,7 @@ app.post('/degen-chart', async (c) => {
           <meta name="fc:frame:button:1" content="${intervalTimesButtons[0]}" />
           <meta name="fc:frame:button:2" content="${intervalTimesButtons[1]}" />
           <meta name="fc:frame:button:3" content="${intervalTimesButtons[2]}" />
-          <meta name="fc:frame:button:4" content="${intervalTimesButtons[2]}" />
+          <meta name="fc:frame:button:4" content="${intervalTimesButtons[3]}" />
           <title>Farcaster Frames</title>
         </head>
       </html>
